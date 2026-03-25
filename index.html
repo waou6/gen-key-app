@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>安全激活码生成器 · 时效签名工具</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      background: linear-gradient(145deg, #e9f0f5 0%, #dee6ed 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.2rem;
+      margin: 0;
+    }
+    .card {
+      max-width: 540px;
+      width: 100%;
+      background: rgba(255,255,255,0.98);
+      backdrop-filter: blur(0px);
+      border-radius: 2rem;
+      padding: 1.8rem;
+      box-shadow: 0 20px 35px -12px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255,255,255,0.5);
+    }
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 650;
+      margin: 0 0 0.2rem 0;
+      color: #0f172a;
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h2:before {
+      content: "⚡";
+      font-size: 1.5rem;
+    }
+    .sub {
+      font-size: 0.75rem;
+      color: #475569;
+      margin-bottom: 1.2rem;
+      border-left: 3px solid #3b82f6;
+      padding-left: 0.65rem;
+    }
+    label {
+      font-weight: 590;
+      font-size: 0.8rem;
+      display: block;
+      margin-top: 1rem;
+      margin-bottom: 0.3rem;
+      color: #1e293b;
+      letter-spacing: -0.2px;
+    }
+    input, button {
+      font-size: 0.9rem;
+      border-radius: 14px;
+      transition: all 0.15s;
+    }
+    input {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      outline: none;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-weight: 450;
+    }
+    input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+    }
+    .button-group {
+      display: flex;
+      gap: 0.8rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    button {
+      flex: 1;
+      background: #3b82f6;
+      border: none;
+      color: white;
+      font-weight: 550;
+      padding: 0.7rem 0.5rem;
+      cursor: pointer;
+      border-radius: 40px;
+      font-size: 0.85rem;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+      transition: transform 0.05s linear, background 0.2s;
+    }
+    button:active {
+      transform: scale(0.97);
+    }
+    button:hover {
+      background: #2563eb;
+      box-shadow: 0 4px 8px rgba(37,99,235,0.2);
+    }
+    .copy-btn {
+      background: #10b981;
+    }
+    .copy-btn:hover {
+      background: #059669;
+    }
+    .verify-btn {
+      background: #8b5cf6;
+    }
+    .verify-btn:hover {
+      background: #7c3aed;
+    }
+    .result-box {
+      background: #f1f5f9;
+      border-radius: 18px;
+      padding: 0.9rem;
+      margin: 1.2rem 0 0.5rem;
+      border: 1px solid #e0e7ef;
+    }
+    .code-text {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 0.85rem 0.9rem;
+      border-radius: 14px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      word-break: break-all;
+      letter-spacing: 0.2px;
+      border: 1px solid #334155;
+      font-weight: 480;
+    }
+    .info-line {
+      font-size: 0.7rem;
+      color: #3b4a66;
+      margin-top: 0.6rem;
+      font-family: monospace;
+      background: #eef2ff;
+      padding: 0.3rem 0.6rem;
+      border-radius: 20px;
+      display: inline-block;
+    }
+    hr {
+      margin: 1.5rem 0 1rem;
+      border: none;
+      border-top: 1.5px dashed #cbd5e1;
+    }
+    .verify-result {
+      margin-top: 0.8rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: 14px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .success {
+      background: #dcfce7;
+      color: #166534;
+      border-left: 4px solid #22c55e;
+    }
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      border-left: 4px solid #ef4444;
+    }
+    .detail {
+      font-size: 0.7rem;
+      color: #475569;
+      margin-top: 0.5rem;
+      background: #f8fafc;
+      padding: 0.4rem 0.7rem;
+      border-radius: 12px;
+      word-break: break-word;
+    }
+    .inline-badge {
+      background: #eef2ff;
+      border-radius: 40px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+    }
+    @media (max-width: 480px) {
+      .card { padding: 1.2rem; }
+      button { padding: 0.6rem 0.4rem; font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>激活码生成器</h2>
+  <!-- <div class="sub">HMAC-SHA256 时效签名 · 防篡改离线校验</div> -->
+
+  <label>⏱️ 有效期（小时）</label>
+  <input id="hours" type="number" step="1" value="24" min="0" placeholder="例如 24 小时">
+
+  <label>🔑 Secret 密钥 (服务端统一密钥)</label>
+  <input id="secret" type="text" placeholder="自定义密钥，用于签名" value="demo-key-2024">
+
+  <div class="button-group">
+    <button onclick="generate()">✨ 生成激活码</button>
+    <button class="copy-btn" onclick="copyCode()">📋 复制激活码</button>
+  </div>
+
+  <div class="result-box">
+    <div id="output" class="code-text">—— 等待生成 ——</div>
+    <div id="debugInfo" class="info-line"></div>
+  </div>
+
+  <hr />
+
+  <label>🔍 验证激活码</label>
+  <input id="inputCode" placeholder="粘贴激活码" autocomplete="off">
+  <div class="button-group" style="margin-top: 0.7rem;">
+    <button class="verify-btn" onclick="verify()">✅ 验证有效性</button>
+  </div>
+  <div id="verifyResult"></div>
+  <div id="verifyDetail" class="detail"></div>
+  <!-- <div style="margin-top: 0.7rem; font-size: 0.7rem; color: #5b6e8c; text-align: center;">
+    <span class="inline-badge">⚙️ 基于时间戳+签名 | 本地校验</span>
+  </div> -->
+</div>
+
+<script>
+  // ---------- 纯前端 HMAC-SHA256 (Web Crypto API) ----------
+  async function hmacSha256(message, secret) {
+    const enc = new TextEncoder();
+    const keyData = enc.encode(secret.trim());
+    // 如果secret为空字符串, 依然可以导入key，但建议不为空（上层校验）
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const signature = await crypto.subtle.sign("HMAC", cryptoKey, enc.encode(message));
+    // 返回标准 base64 字符串
+    return btoa(String.fromCharCode(...new Uint8Array(signature)));
+  }
+
+  // 清理 base64 中非字母数字字符 (只保留 A-Z a-z 0-9)
+  function cleanBase64(str) {
+    return str.replace(/[^A-Za-z0-9]/g, "");
+  }
+
+  // Base64URL 编码 (无填充)
+  function base64UrlEncode(str) {
+    return btoa(str)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+  }
+
+  // Base64URL 解码 (自动修复填充)
+  function base64UrlDecode(str) {
+    let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    // 补齐填充
+    while (base64.length % 4) base64 += "=";
+    return atob(base64);
+  }
+
+  // 格式化剩余时间 (ms -> 可读)
+  function formatRemain(ms) {
+    if (ms <= 0) return "已过期";
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}小时${m}分${s}秒`;
+    if (m > 0) return `${m}分${s}秒`;
+    return `${s}秒`;
+  }
+
+  // 生成激活码核心逻辑
+  async function generate() {
+    const hoursInput = document.getElementById("hours");
+    let hours = parseInt(hoursInput.value);
+    if (isNaN(hours) || hours < 0) hours = 0;
+    const secret = document.getElementById("secret").value;
+    
+    if (!secret.trim()) {
+      alert("⚠️ Secret 密钥不能为空，请填写密钥以保证签名安全");
+      return;
+    }
+    
+    // 过期时间戳 (毫秒)
+    const expire = Date.now() + hours * 3600 * 1000;
+    const timeStr = expire.toString();          // 13位数字字符串
+    
+    // 计算 HMAC-SHA256 签名, 取 base64 清理后前16位字符
+    let fullSigBase64;
+    try {
+      fullSigBase64 = await hmacSha256(timeStr, secret);
+    } catch (err) {
+      console.error(err);
+      alert("签名计算失败，可能是浏览器不支持 Web Crypto 或 secret 无效");
+      return;
+    }
+    const shortSig = cleanBase64(fullSigBase64).slice(0, 16);
+    if (shortSig.length < 8) {
+      alert("签名生成异常，请重试");
+      return;
+    }
+    
+    // 组合: 时间戳(13位) + 签名片段(16位)
+    const raw = timeStr + shortSig;
+    const code = base64UrlEncode(raw);
+    
+    // 更新UI
+    const outputDiv = document.getElementById("output");
+    outputDiv.innerText = code;
+    document.getElementById("verifyResult").innerHTML = "";
+    document.getElementById("verifyDetail").innerHTML = "";
+    
+    const expireDate = new Date(expire).toLocaleString();
+    let validInfo = `⏰ 截止: ${expireDate} | ${hours}小时有效`;
+    if (hours === 0) validInfo = `🔓 永久有效 (0小时表示永不失效) | 截止: ${expireDate}`;
+    document.getElementById("debugInfo").innerHTML = validInfo;
+  }
+
+  // 复制激活码
+  async function copyCode() {
+    const textElem = document.getElementById("output");
+    const text = textElem.innerText;
+    if (!text || text === "—— 等待生成 ——" || text.includes("等待生成")) {
+      alert("请先生成激活码");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("✅ 激活码已复制", 1500);
+    } catch (err) {
+      // 降级方案
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      const success = document.execCommand("copy");
+      document.body.removeChild(textarea);
+      if (success) showToast("📋 复制成功", 1500);
+      else alert("复制失败，可手动选取复制");
+    }
+  }
+  
+  // 简易提示 (不需要额外dom)
+  function showToast(msg, duration = 1500) {
+    let toast = document.getElementById("dynamicToast");
+    if (!toast) {
+      const div = document.createElement("div");
+      div.id = "dynamicToast";
+      div.style.position = "fixed";
+      div.style.bottom = "20px";
+      div.style.left = "50%";
+      div.style.transform = "translateX(-50%)";
+      div.style.backgroundColor = "#1e293b";
+      div.style.color = "white";
+      div.style.padding = "8px 18px";
+      div.style.borderRadius = "40px";
+      div.style.fontSize = "0.85rem";
+      div.style.fontWeight = "500";
+      div.style.zIndex = "9999";
+      div.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+      div.style.backdropFilter = "blur(4px)";
+      div.style.fontFamily = "system-ui, sans-serif";
+      document.body.appendChild(div);
+      toast = div;
+    }
+    toast.innerText = msg;
+    toast.style.opacity = "1";
+    clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(() => {
+      toast.style.opacity = "0";
+    }, duration);
+  }
+
+  // 验证激活码 (完整校验 + 时效性)
+  async function verify() {
+    const code = document.getElementById("inputCode").value.trim();
+    const secret = document.getElementById("secret").value.trim();
+    const resultDiv = document.getElementById("verifyResult");
+    const detailDiv = document.getElementById("verifyDetail");
+    
+    // 重置样式
+    resultDiv.innerHTML = "";
+    detailDiv.innerHTML = "";
+    
+    if (!code) {
+      resultDiv.innerHTML = '<div class="verify-result error">❌ 请输入激活码</div>';
+      return;
+    }
+    if (!secret) {
+      resultDiv.innerHTML = '<div class="verify-result error">🔐 请输入 Secret 密钥再进行验证</div>';
+      return;
+    }
+    
+    try {
+      // 1. Base64URL 解码
+      let decoded;
+      try {
+        decoded = base64UrlDecode(code);
+      } catch (e) {
+        throw new Error("激活码格式错误，请检查是否完整复制");
+      }
+      
+      // 长度校验: 时间戳13位 + 签名至少8位 (实际我们生成16位，但可兼容旧版)
+      if (decoded.length < 16) {
+        throw new Error("激活码结构不完整 (长度过短)");
+      }
+      
+      // 提取时间戳部分 (前13位数字)
+      const timeStr = decoded.slice(0, 13);
+      const sigPart = decoded.slice(13);
+      
+      // 校验时间戳是否为纯数字且合理
+      const expire = Number(timeStr);
+      if (isNaN(expire) || !Number.isInteger(expire) || expire <= 0) {
+        throw new Error("时间戳无效，激活码损坏");
+      }
+      // 额外限制: 时间戳年份不能过于离谱 (比如>2500年 或者 < 2020)
+      const minValid = 1600000000000;  // 2020年左右
+      const maxValid = 4102444800000;  // 2100年
+      if (expire < minValid || expire > maxValid) {
+        throw new Error("时间戳范围异常，激活码非法");
+      }
+      
+      // 2. 重新计算签名 (根据同样的secret + 时间戳)
+      let computedFullSig;
+      try {
+        computedFullSig = await hmacSha256(timeStr, secret);
+      } catch (err) {
+        throw new Error("签名计算失败，请检查密钥格式");
+      }
+      const expectedSig = cleanBase64(computedFullSig).slice(0, 16);
+      
+      // 恒定时间比较防止时序 (但前端安全影响小，但是做内容严格匹配)
+      if (expectedSig !== sigPart) {
+        resultDiv.innerHTML = '<div class="verify-result error">❌ 激活码无效：签名不匹配 (Secret错误或激活码被篡改)</div>';
+        detailDiv.innerHTML = "请确保使用相同的 Secret 密钥验证";
+        return;
+      }
+      
+      // 3. 时效校验
+      const now = Date.now();
+      const isExpired = now > expire;
+      const expireDateObj = new Date(expire);
+      const expireLocale = expireDateObj.toLocaleString();
+      
+      if (isExpired) {
+        resultDiv.innerHTML = '<div class="verify-result error">⏰ 激活码已过期</div>';
+        detailDiv.innerHTML = `📅 过期时间: ${expireLocale}<br>⏱️ 当前系统时间: ${new Date().toLocaleString()}`;
+      } else {
+        const remainMs = expire - now;
+        const remainStr = formatRemain(remainMs);
+        resultDiv.innerHTML = '<div class="verify-result success">✅ 激活码有效 · 授权通过</div>';
+        let detailMsg = `⌛ 剩余有效期: ${remainStr}<br>📆 截止时间: ${expireLocale}`;
+        // 如果小时为0的特判 (生成时允许0小时，那表示永久)
+        const hoursInputVal = document.getElementById("hours").value;
+        // 不过根据原始数据判断: 如果时间戳特别远（比如2100年），但不额外处理，仅展示
+        if ((expire - now) > 315360000000) {  // 超过10年可以认为是近乎永久
+          detailMsg = `♾️ 近乎永久授权 (截止 ${expireLocale})<br>剩余: ${remainStr}`;
+        }
+        detailDiv.innerHTML = detailMsg;
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `<div class="verify-result error">⚠️ 校验失败: ${err.message}</div>`;
+      detailDiv.innerHTML = "请确认激活码完整复制，且与当前密钥匹配";
+      console.warn("verify error detail:", err);
+    }
+  }
+  
+  // 增加一个快捷体验: 示例填充默认demo演示 (不必额外按钮)
+  // 并在页面加载时演示一个默认生成码 (方便测试)
+  window.addEventListener("DOMContentLoaded", async () => {
+    // 设置默认demo值, 提前展示一个有效激活码让用户直观体验
+    // 但为了避免异步闪烁，生成一个24小时有效期的激活码展示。
+    try {
+      const defaultHours = 24;
+      const defaultSecret = "demo-key-2024";
+      const expireDemo = Date.now() + defaultHours * 3600 * 1000;
+      const timeStrDemo = expireDemo.toString();
+      const sigFull = await hmacSha256(timeStrDemo, defaultSecret);
+      const shortSigDemo = cleanBase64(sigFull).slice(0, 16);
+      const rawDemo = timeStrDemo + shortSigDemo;
+      const demoCode = base64UrlEncode(rawDemo);
+      document.getElementById("output").innerText = demoCode;
+      const expireDateDemo = new Date(expireDemo).toLocaleString();
+      document.getElementById("debugInfo").innerHTML = `⏳ 示例激活码 (24h有效) 截止: ${expireDateDemo} | 24小时有效`;
+      // 确保验证区域无残留
+      document.getElementById("verifyResult").innerHTML = "";
+      document.getElementById("verifyDetail").innerHTML = "";
+    } catch (e) {
+      // 如果初始化失败不做处理
+      console.warn(e);
+      document.getElementById("output").innerText = "—— 就绪 ——";
+    }
+  });
+</script>
+</body>
+</html>
